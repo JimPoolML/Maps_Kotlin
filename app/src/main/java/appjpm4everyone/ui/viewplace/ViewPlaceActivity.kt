@@ -1,6 +1,7 @@
 package appjpm4everyone.ui.viewplace
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -45,9 +46,12 @@ class ViewPlaceActivity : BaseActivity() {
         binding.tvPlaceOpenHour.text = ""
 
         binding.btnShowMap.setOnClickListener {
-            //Open Map Intent to view
-            val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(mPlace!!.result.url))
-            startActivity(mapIntent)
+            //Open Route Map Intent to MainActivity
+            val intent = Intent()
+            setResult(Activity.RESULT_OK, intent)
+            finish()
+            /*val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(mPlace!!.result.url))
+            startActivity(mapIntent)*/
         }
 
         //Load photo to place
@@ -94,7 +98,6 @@ class ViewPlaceActivity : BaseActivity() {
                 override fun onResponse(call: Call<PlaceDetail>, response: Response<PlaceDetail>) {
                     mPlace = response.body()
                     progressBar.hideProgress()
-
                     binding.tvPlaceAddress.text = mPlace!!.result.formatted_address
                     binding.tvPlaceName.text = mPlace!!.result.name
                 }
@@ -103,9 +106,7 @@ class ViewPlaceActivity : BaseActivity() {
                     showSnakyBar(t.message!!)
                     progressBar.hideProgress()
                 }
-
             })
-
     }
 
     private fun showSnakyBar(message: String) {

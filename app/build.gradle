@@ -66,4 +66,11 @@ dependencies {
 
     //Picasso
     implementation "com.squareup.picasso:picasso:2.5.2"
+
+    //
+    //implementation 'com.github.dj-alexander:library:1.1.0'
+
+    //OkHttpClient
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'com.google.code.gson:gson:2.8.5'
 }

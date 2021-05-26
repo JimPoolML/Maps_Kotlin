@@ -5,7 +5,11 @@
     <string name="place_name">Nombre del lugar</string>
     <string name="place_address">Dirección del lugar</string>
     <string name="place_hour">Abierto ahora:</string>
-    <string name="show_map">Mostrar en mapa:</string>
+    <string name="show_map">Mostrar la ruta:</string>
+    <string name="show_route">Mostrando ruta en mapa:</string>
+    <string name="dont_show_route">Para mostar la ruta debe presionar "MOSTRAR LA RUTA"</string>
+
+    <string name="develop_by">Desarrollado por Jim Pool Moreno L. ☺"</string>
 
     <string-array name="place_options">
         <item>atm</item>
@@ -13,6 +17,7 @@
         <item>hospital</item>
         <item>school</item>
         <item>restaurant</item>
+        <item>About it</item>
     </string-array>
 
 </resources>

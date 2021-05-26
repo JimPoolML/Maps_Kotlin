@@ -2,21 +2,24 @@ package appjpm4everyone.ui.mapskotlin
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Adapter
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import appjpm4everyone.base.BaseActivity
+import appjpm4everyone.geocodewaypoints.GeocodedWaypoints
 import appjpm4everyone.googleapiclass.MyPlaces
 import appjpm4everyone.remote.IGoogleAPIService
 import appjpm4everyone.ui.mapskotlin.databinding.ActivityMainBinding
@@ -29,11 +32,17 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
+import com.google.gson.Gson
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import retrofit2.Call
 import retrofit2.Response
 
+
 class MainActivity : BaseActivity(), OnMapReadyCallback,
-    GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMyLocationClickListener {
+    GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMyLocationClickListener  {
     //Implements DataBinding
     private lateinit var binding: ActivityMainBinding
 
@@ -45,8 +54,6 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
 
     // inside a basic activity
     private var locationManager: LocationManager? = null
-    private var currentLat : Double = 0.0
-    private var currentLng : Double = 0.0
     private var isFirstTime: Boolean = false
 
 
@@ -55,6 +62,20 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
     internal var currentPlaces: MyPlaces? = null
     private  val ZERO_RESULTS = "ZERO_RESULTS"
     private var placeSelected : String = "atm"
+
+    //Polylines
+    //polyline object
+    private var polylines: MutableList<Polyline?>? = null
+    private lateinit var listMarkerOptions: MutableList<MarkerOptions>
+
+    //current and destination location objects
+    var myLocation: Location? = null
+    var destinationLocation: Location? = null
+    private var startPlace: LatLng? = null
+    private var endPlace: LatLng? = null
+
+    //To show route map
+    private val SECOND_ACTIVITY_REQUEST_CODE = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,8 +94,13 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
 
     private fun initUI() {
         binding.btnFind.setOnClickListener {
-            nearByPlace(placeSelected)
-            progressBar.show(this)
+            if(placeSelected == "About it"){
+                showSnakyBar(getString(R.string.develop_by))
+            }else{
+                nearByPlace(placeSelected)
+                progressBar.show(this)
+            }
+
         }
     }
 
@@ -82,7 +108,7 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
         //Clear all maker into map
         maps.clear()
         //build URL request base on location
-        val url = getUrl(currentLat, currentLng, typePlace)
+        val url = getUrl(startPlace!!.latitude, startPlace!!.longitude, typePlace)
 
         //Retrofit services
         mService.getNearbyPlaces(url)
@@ -106,6 +132,8 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
                             }*/
                             showSnakyBar(getString(R.string.no_location))
                         }else {
+                            //Clean list
+                            listMarkerOptions= mutableListOf()
                             for (i in response.body()!!.results.indices) {
 
                                 showSnakyBar(getString(R.string.yes_location, placeSelected))
@@ -137,6 +165,7 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
                                 marketOptions.snippet(i.toString())
 
                                 //Add market into map
+                                listMarkerOptions.add(marketOptions)
                                 maps.addMarker(marketOptions)
                                 //move camera
                                 /*maps.moveCamera(CameraUpdateFactory.newLatLng(latLng))
@@ -182,13 +211,6 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
     }
 
     private fun initSpinner() {
-        /*val places: MutableList<String> = mutableListOf()
-        places.add("atm")
-        places.add("bank")
-        places.add("hospital")
-        places.add("school")
-        places.add("restaurant")*/
-
         val optionsPlace = getPlaces()
         val dataAdapter: ArrayAdapter<String> = ArrayAdapter<String>(this, R.layout.spinner_style, optionsPlace)
         // Drop down layout style - list view with radio button
@@ -206,8 +228,6 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
             }
 
         }
-
-
     }
 
     //To easily test
@@ -243,6 +263,10 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
         }
     }
 
+    fun getDirectionURL(origin:LatLng,dest:LatLng) : String{
+        return "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${dest.latitude},${dest.longitude}&sensor=false&mode=driving&key=AIzaSyDJwSEcfq3ijM50mbd1axRb4uBJWR6vZAo"
+    }
+
     //Callback from Maps
     override fun onMapReady(googleMap: GoogleMap) {
         //Constructor
@@ -255,12 +279,62 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
 
         //When you click into marker
         maps.setOnMarkerClickListener { marker ->
+
             //When user select market, just get result of place assign to static variable
             Common.currentResult = currentPlaces!!.results[(Integer.parseInt(marker.snippet))]
+            endPlace = LatLng(Common.currentResult!!.geometry.location.lat,
+                Common.currentResult!!.geometry.location.lng)
             //Start new activity
-            startActivity(Intent(this@MainActivity, ViewPlaceActivity::class.java))
+            //startActivity(Intent(this@MainActivity, ViewPlaceActivity::class.java))
+            // Start the SecondActivity
+            val intent = Intent(this, ViewPlaceActivity::class.java)
+            startActivityForResult(intent, SECOND_ACTIVITY_REQUEST_CODE)
             true
         }
+    }
+
+    private fun cleanMaps() {
+        //clean data
+        maps.clear()
+        //Paint again every market
+        listMarkerOptions.forEach {it ->
+            maps.addMarker(it)
+        }
+    }
+
+    // This method is called when the second activity finishes
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        // Check that it is the SecondActivity with an OK result
+        if (requestCode == SECOND_ACTIVITY_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK) {
+                val location1 = startPlace
+                val location2 = endPlace
+                Log.d("GoogleMap", "before URL")
+                val url = getDirectionURL(location1!!, location2!!)
+                Log.d("GoogleMap", "URL : $url")
+                GetDirection(url).execute()
+                cleanMaps()
+                progressBar.show(this)
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                showSnakyBar(getString(R.string.dont_show_route))
+            }
+        }
+        if (resultCode == RESULT_CANCELED) {
+            showSnakyBar(getString(R.string.dont_show_route))
+        }
+
+        /*if (requestCode == FACE) {
+            if (resultCode == RESULT_OK) {
+                viewModel.onfaceValidate(data)
+            } else if (resultCode == IntentExtras.ERROR_INTENT) {
+                viewModel.onErrorIntent(data)
+            }
+        }
+        if (resultCode == RESULT_CANCELED) {
+            viewModel.sdkCanceled()
+        }*/
+
     }
 
     private fun createMarker() {
@@ -303,10 +377,10 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
 
     override fun onMyLocationClick(p0: Location) {
         //simple constructor
-        currentLat = p0.latitude
-        currentLng = p0.longitude
+        startPlace = LatLng(p0.latitude,p0.longitude )
         Toast.makeText(this, "Estás en ${p0.latitude}, ${p0.longitude}", Toast.LENGTH_SHORT).show()
     }
+
 
     //define the listener
     private val locationListener: LocationListener = object : LocationListener {
@@ -327,5 +401,88 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
         override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
         override fun onProviderEnabled(provider: String) {}
         override fun onProviderDisabled(provider: String) {}
+    }
+
+    //StartActivity for result
+
+
+    //OkHttpClient
+    private inner class GetDirection(val url : String) : AsyncTask<Void, Void, List<List<LatLng>>>(){
+        override fun doInBackground(vararg params: Void?): List<List<LatLng>> {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            val data = response.body()!!.string()
+            Log.d("GoogleMap" , " data : $data")
+            val result =  ArrayList<List<LatLng>>()
+            try{
+                val respObj = Gson().fromJson(data,GeocodedWaypoints::class.java)
+
+                val path =  ArrayList<LatLng>()
+
+                for (i in 0..(respObj.routes[0].legs[0].steps.size-1)){
+//                    val startLatLng = LatLng(respObj.routes[0].legs[0].steps[i].start_location.lat.toDouble()
+//                            ,respObj.routes[0].legs[0].steps[i].start_location.lng.toDouble())
+//                    path.add(startLatLng)
+//                    val endLatLng = LatLng(respObj.routes[0].legs[0].steps[i].end_location.lat.toDouble()
+//                            ,respObj.routes[0].legs[0].steps[i].end_location.lng.toDouble())
+                    path.addAll(decodePolyline(respObj.routes[0].legs[0].steps[i].polyline.points))
+                }
+                result.add(path)
+            }catch (e:Exception){
+                e.printStackTrace()
+            }
+            return result
+        }
+
+        override fun onPostExecute(result: List<List<LatLng>>) {
+            progressBar.hideProgress()
+            showSnakyBar(getString(R.string.show_route))
+            val lineoption = PolylineOptions()
+            for (i in result.indices){
+                lineoption.addAll(result[i])
+                lineoption.width(10f)
+                lineoption.color(Color.BLUE)
+                lineoption.geodesic(true)
+            }
+            maps.addPolyline(lineoption)
+        }
+    }
+
+    public fun decodePolyline(encoded: String): List<LatLng> {
+
+        val poly = ArrayList<LatLng>()
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
+
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+            do {
+                b = encoded[index++].toInt() - 63
+                result = result or (b and 0x1f shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlat = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lat += dlat
+
+            shift = 0
+            result = 0
+            do {
+                b = encoded[index++].toInt() - 63
+                result = result or (b and 0x1f shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlng = if (result and 1 != 0) (result shr 1).inv() else result shr 1
+            lng += dlng
+
+            val latLng = LatLng((lat.toDouble() / 1E5),(lng.toDouble() / 1E5))
+            poly.add(latLng)
+        }
+
+        return poly
     }
 }

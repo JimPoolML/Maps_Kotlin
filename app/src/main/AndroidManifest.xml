@@ -13,11 +13,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MapsKotlin">
-        <activity android:name="appjpm4everyone.ui.viewplace.ViewPlaceActivity"></activity>
+        <activity android:name="appjpm4everyone.ui.viewplace.ViewPlaceActivity"
+            android:screenOrientation="portrait"/>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
+
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
 
         <activity android:name=".MainActivity"
             android:screenOrientation="portrait">
