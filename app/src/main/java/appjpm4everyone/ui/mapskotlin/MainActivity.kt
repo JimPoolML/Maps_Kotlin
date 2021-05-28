@@ -412,7 +412,7 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
             val client = OkHttpClient()
             val request = Request.Builder().url(url).build()
             val response = client.newCall(request).execute()
-            val data = response.body()!!.string()
+            val data = response.body!!.string()
             Log.d("GoogleMap" , " data : $data")
             val result =  ArrayList<List<LatLng>>()
             try{
@@ -420,13 +420,13 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
 
                 val path =  ArrayList<LatLng>()
 
-                for (i in 0..(respObj.routes[0].legs[0].steps.size-1)){
+                for (element in respObj.routes[0].legs[0].steps){
 //                    val startLatLng = LatLng(respObj.routes[0].legs[0].steps[i].start_location.lat.toDouble()
 //                            ,respObj.routes[0].legs[0].steps[i].start_location.lng.toDouble())
 //                    path.add(startLatLng)
 //                    val endLatLng = LatLng(respObj.routes[0].legs[0].steps[i].end_location.lat.toDouble()
 //                            ,respObj.routes[0].legs[0].steps[i].end_location.lng.toDouble())
-                    path.addAll(decodePolyline(respObj.routes[0].legs[0].steps[i].polyline.points))
+                    path.addAll(decodePolyline(element.polyline.points))
                 }
                 result.add(path)
             }catch (e:Exception){
