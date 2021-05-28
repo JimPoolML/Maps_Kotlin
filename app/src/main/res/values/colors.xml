@@ -34,19 +34,12 @@
     <color name="lightBlack">#00102E</color>
     <color name="colorWhite2">#00FFFFFF</color>
 
-    <color name="blue_abis_item">#005DCA</color>
-    <color name="blue_abis">#0066D0</color>
-    <color name="blue_text_abis">#439AFF</color>
-    <color name="red_abis">#FF0034</color>
-    <color name="magenta_generic_id">#E30080</color>
+    <color name="blue_one_item">#005DCA</color>
+    <color name="blue_another">#0066D0</color>
+    <color name="blue_text">#439AFF</color>
+    <color name="red_one">#FF0034</color>
+    <color name="magenta_one">#E30080</color>
 
-    <color name="red_splash">#CB1957</color>
-    <color name="soft_purple_splash">#7f1d66</color>
-    <color name="hard_purple_splash">#332074</color>
-
-    <color name="purple_toolbar">#682A97</color>
-    <color name="gray_text_button">#989898</color>
-    <color name="gray_text_nav">#666666</color>
     <color name="gray_line_border">#E1E1E1</color>
 
     <color name="success">#2AC96B</color>

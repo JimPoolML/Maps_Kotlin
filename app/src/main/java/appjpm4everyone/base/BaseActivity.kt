@@ -47,7 +47,7 @@ abstract class BaseActivity : AppCompatActivity() {
             //.setTextTypeface(typeface)
             .setIcon(R.drawable.ic_error)
             .setText(message)
-            .setBackgroundColor(ContextCompat.getColor(activity, R.color.pink))
+            .setBackgroundColor(ContextCompat.getColor(activity, R.color.blue_another))
             .setDuration(lenght)
             .error()
             .show()
