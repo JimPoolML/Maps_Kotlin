@@ -11,6 +11,7 @@
     <string name="show_easter_egg">🇨🇴🇨🇴Fuerza Colombia, no más corrupción🇨🇴🇨🇴</string>
 
     <string name="develop_by">Desarrollado por Jim Pool Moreno L. 🇨🇴🇨🇴"</string>
+    <string name="first_activate_gps">Por favor active el GPS y la conexión a internet"</string>
     <string name="btn_find">Find</string>
 
     <string-array name="place_options">

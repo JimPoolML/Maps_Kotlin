@@ -10,6 +10,7 @@ import appjpm4everyone.ui.mainactivity.MainActivity
 import appjpm4everyone.ui.mapskotlin.BuildConfig
 import appjpm4everyone.ui.mapskotlin.databinding.ActivitySplashBinding
 import appjpm4everyone.ui.viewplace.ViewPlaceActivity
+import com.google.firebase.analytics.FirebaseAnalytics
 
 private const val TIME_SLEEP: Long = 2500
 
@@ -32,9 +33,17 @@ class SplashActivity : BaseActivity() {
         val handler = Handler()
         handler.postDelayed({
             // do something after 1000ms
+            showFirebaseMessage("Finish splash", "OK")
             onNavigationMain()
         }, TIME_SLEEP)
 
+    }
+
+    private fun showFirebaseMessage(message: String, value: String) {
+        val analytics: FirebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        val bundle = Bundle()
+        bundle.putString(message, value)
+        analytics.logEvent("SplashActivity", bundle)
     }
 
     private fun onNavigationMain() {

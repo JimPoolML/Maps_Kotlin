@@ -35,6 +35,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -59,7 +60,7 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
-    private var mMarker : Marker? = null
+    private var mMarker: Marker? = null
     private var isFirstTime: Boolean = false
 
     //Retrofit service
@@ -101,8 +102,12 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
             if (placeSelected == "About it") {
                 showSnakyBar(getString(R.string.develop_by))
             } else {
-                nearByPlace(placeSelected)
-                progressBar.show(this)
+                if(startPlace == null){
+                    showSnakyBar(getString(R.string.first_activate_gps))
+                }else {
+                    nearByPlace(placeSelected)
+                    progressBar.show(this)
+                }
             }
 
         }
@@ -126,6 +131,9 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
 
 
                     if (response.isSuccessful) {
+
+                        //FirebaseAnalytics
+                        showFirebaseMessage("Place founded", typePlace)
 
                         //Any place was founded
                         if (response.body()!!.results.indices.isEmpty() || response.body()!!.status == ZERO_RESULTS) {
@@ -184,11 +192,20 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
                 override fun onFailure(call: Call<MyPlaces>, t: Throwable) {
                     //Hide progress bar
                     progressBar.hideProgress()
+                    //FirebaseAnalytics
+                    showFirebaseMessage("Place not founded", t.message!!)
                     showSnakyBar(t.message!!)
                 }
 
             })
 
+    }
+
+    private fun showFirebaseMessage(message: String, value: String) {
+        val analytics: FirebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        val bundle = Bundle()
+        bundle.putString(message, value)
+        analytics.logEvent("MainActivity", bundle)
     }
 
     private fun showSnakyBar(message: String) {
@@ -258,7 +275,7 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
             getLocation()
             setCurrentLocation()
             //enable zoom location
-            maps.uiSettings.isZoomControlsEnabled=true
+            maps.uiSettings.isZoomControlsEnabled = true
         }
     }
 
@@ -267,18 +284,22 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
         buildingLocationRequest()
         buildingLocationCallBack()
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper())
+        fusedLocationProviderClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.myLooper()
+        )
 
     }
 
     private fun buildingLocationCallBack() {
-        locationCallback = object : LocationCallback(){
+        locationCallback = object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult?) {
                 //Get last location
-                mLastLocation = p0!!.locations[p0.locations.size-1]
+                mLastLocation = p0!!.locations[p0.locations.size - 1]
 
                 //
-                if(mMarker != null){
+                if (mMarker != null) {
                     mMarker!!.remove()
                 }
 
@@ -344,9 +365,9 @@ class MainActivity : BaseActivity(), OnMapReadyCallback,
         maps.setOnMarkerClickListener { marker ->
 
 
-            if(marker.position == LatLng(4.590841, -74.174112)){
+            if (marker.position == LatLng(4.590841, -74.174112)) {
                 showSnakyBar(getString(R.string.show_easter_egg))
-            }else {
+            } else {
                 //Avoid nulls or avoid route the same place
                 if (currentPlaces != null || marker.position != startPlace) {
                     //When user select market, just get result of place assign to static variable
